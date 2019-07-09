@@ -82,7 +82,7 @@ lgb_params = {
     "bagging_seed": random_state,
     "verbosity": 1,
     "seed": random_state,
-    "num_threads": 16
+    "num_threads": 8
 }
 
 n_splits = 7
@@ -151,7 +151,7 @@ sns.barplot(x="importance", y="feature",
             data=best_features.sort_values(by="importance", ascending=False))
 plt.title('LightGBM Features (averaged over folds)')
 plt.tight_layout()
-plt.savefig(f'{all_auc}_lgbm_importances.png')
+plt.savefig(f'lgbm_importances.png')
 
 # submission
 predictions['target'] = \

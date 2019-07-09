@@ -2,3 +2,4 @@ lgbm_old.py
 test.csv
 train.csv
 slurm_job.sh
+*.out
