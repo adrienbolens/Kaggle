@@ -26,13 +26,12 @@ unique_samples = []
 # For each feature, identify the unique values in test_df
 unique_count = np.zeros_like(test_val)
 for feature in range(test_val.shape[1]):
-    _, index_, count_ = np.unique(test_val[:, feature], return_counts=True,
-                                  return_index=True)
-    unique_count[index_[count_ == 1], feature] += 1
+    _, index, count = np.unique(test_val[:, feature], return_counts=True,
+                                return_index=True)
+    unique_count[index[count == 1], feature] += 1
 
-# Samples which have unique values are real, the others are fake
-# They are not taken into account for the evaluation
-# Identifying them is a key process as they interfere with feature engineering
+# Samples in test that have unique values are real, the others are fake
+# The fake data is not taken into account for the evaluation of n_occurrences
 real_samples_indexes = np.argwhere(np.sum(unique_count, axis=1) > 0)[:, 0]
 synthetic_samples_indexes = \
     np.argwhere(np.sum(unique_count, axis=1) == 0)[:, 0]
@@ -51,10 +50,10 @@ data_df = pd.concat([train_df, real_test_df], ignore_index=True)
 # var -> occ_var = n. of occurrences of corresponding value in the whole set
 for var in features:
     feature = data_df[var]
-    n_occurences = feature.value_counts()[feature].values
-    train_df['occ_' + var] = n_occurences[:len(train_df)]
+    n_occurrences = feature.value_counts()[feature].values
+    train_df['occ_' + var] = n_occurrences[:len(train_df)]
     test_occ = np.zeros(len(test_df))
-    test_occ[real_samples_indexes] = n_occurences[-len(real_test_df):]
+    test_occ[real_samples_indexes] = n_occurrences[-len(real_test_df):]
     test_df['occ_' + var] = test_occ
 
 
@@ -69,10 +68,11 @@ lgb_params = {
     "max_depth": -1,
     "num_leaves": 13,
     "learning_rate": 0.01,
-    "bagging_freq": 5,
-    "bagging_fraction": 0.4,
+    #  "bagging_freq": 5,
+    #  "bagging_fraction": 0.4,
     #  "feature_fraction": 0.05,
-    "feature_fraction": 0.04,
+    # use 1.0 with the new features!!
+    "feature_fraction": 1.0,
     "min_data_in_leaf": 80,
     "min_sum_hessian_in_leaf": 10,
     "tree_learner": "serial",
@@ -154,9 +154,11 @@ plt.tight_layout()
 plt.savefig(f'lgb_importances.png')
 
 # submission
-predictions['target'] = \
-    np.mean(predictions[[col for col in predictions.columns
-                         if col not in ['ID_code', 'target']]].values, axis=1)
+predictions['target'] = np.mean(
+    predictions[[col for col in predictions.columns
+                 if col not in ['ID_code', 'target']]].values,
+    axis=1
+)
 #  predictions.to_csv('lgb_all_predictions.csv', index=None)
 sub_df = pd.DataFrame({"ID_code": test_df["ID_code"].values})
 sub_df["target"] = predictions['target']
